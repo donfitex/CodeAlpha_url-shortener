@@ -10,3 +10,6 @@ instance/
 htmlcov/
 .vscode/
 .ruff_cache/
+
+tailwindcss.exe
+node_modules/

@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, current_app, redirect, request
+from flask import Blueprint, abort, current_app, redirect, request, render_template
 
 from app.extensions import db
 from app.services import (
@@ -14,7 +14,7 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.get("/")
 def index():
-    return "LinkForge is running"
+    return render_template("index.html")
 
 
 @main_bp.get("/<short_code>")

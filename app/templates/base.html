@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LinkForge: Shorten your links{% endblock %}</title>
+  <meta name="description" content="{% block description %}LinkForge turns long URLs into short, clean links.{% endblock %}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="flex min-h-full flex-col bg-slate-50 text-slate-900 antialiased">
+  <a href="#main"
+     class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-indigo-700 focus:shadow">
+    Skip to main content
+  </a>
+
+  <header class="border-b border-slate-200 bg-white">
+    <nav aria-label="Main" class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
+      <a href="{{ url_for('main.index') }}"
+         class="rounded-md text-xl font-bold tracking-tight text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+        LinkForge
+      </a>
+    </nav>
+  </header>
+
+  <main id="main" class="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white">
+    <p class="mx-auto max-w-5xl px-4 py-6 text-sm text-slate-600 sm:px-6">
+      &copy; <span id="year">2026</span> LinkForge
+    </p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>
