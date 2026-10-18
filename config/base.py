@@ -20,6 +20,7 @@ class BaseConfig:
 
     SQLALCHEMY_DATABASE_URI = _database_url(f"sqlite:///{BASE_DIR / 'linkforge.db'}")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
     # Application settings
     BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:5000").rstrip("/")

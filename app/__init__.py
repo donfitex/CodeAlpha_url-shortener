@@ -28,8 +28,10 @@ def _configure_logging(app: Flask) -> None:
 
 
 def _init_extensions(app: Flask) -> None:
-    # SQLAlchemy and Flask-Migrate are initialized here in Commit 04.
-    pass
+    from app.extensions import db, migrate
+
+    db.init_app(app)
+    migrate.init_app(app, db)
 
 
 def _register_blueprints(app: Flask) -> None:
