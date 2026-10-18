@@ -28,6 +28,7 @@ def _configure_logging(app: Flask) -> None:
 
 
 def _init_extensions(app: Flask) -> None:
+    from app import models  # noqa: F401  (registers models for migrations)
     from app.extensions import db, migrate
 
     db.init_app(app)
