@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, current_app, redirect
+from flask import Blueprint, abort, current_app, redirect, request
 
 from app.extensions import db
 from app.services import (
@@ -37,11 +37,13 @@ def redirect_to_url(short_code: str):
         )
         abort(404)
 
-    try:
-        record_click(url)
-    except Exception:
-        db.session.rollback()
-        current_app.logger.exception("Failed to record click for %s", url.short_code)
+        # Only real visits count; HEAD requests (previews, uptime checks) do not
+    if request.method != "HEAD":
+        try:
+            record_click(url)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Failed to record click for %s", url.short_code)
 
     response = redirect(destination, code=302)
     response.headers["Cache-Control"] = "no-store"

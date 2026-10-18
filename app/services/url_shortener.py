@@ -4,7 +4,7 @@ from datetime import datetime
 
 from flask import current_app
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from app.extensions import db
 from app.models import URL
@@ -89,12 +89,3 @@ def resolve_short_code(short_code: str) -> URL:
         raise ShortCodeExpired(short_code)
     return url
 
-
-def record_click(url: URL) -> None:
-    """Atomically increment the click count without touching updated_at."""
-    db.session.execute(
-        update(URL)
-        .where(URL.id == url.id)
-        .values(click_count=URL.click_count + 1, updated_at=URL.updated_at)
-    )
-    db.session.commit()
