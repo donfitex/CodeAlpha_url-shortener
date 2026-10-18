@@ -1,8 +1,10 @@
+import re
 import secrets
 from datetime import datetime
 
 from flask import current_app
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, update
 
 from app.extensions import db
 from app.models import URL
@@ -64,3 +66,35 @@ def create_short_url(
 
     current_app.logger.error("Could not generate a unique short code")
     raise ShortCodeGenerationError("Could not generate a unique short code.")
+
+SHORT_CODE_PATTERN = re.compile(r"^[A-Za-z0-9]{4,32}$")
+
+
+class ShortCodeNotFound(LookupError):
+    """No link exists for this short code."""
+
+
+class ShortCodeExpired(LookupError):
+    """The link exists but has expired."""
+
+
+def resolve_short_code(short_code: str) -> URL:
+    if not SHORT_CODE_PATTERN.match(short_code):
+        raise ShortCodeNotFound(short_code)
+
+    url = db.session.scalar(select(URL).where(URL.short_code == short_code))
+    if url is None:
+        raise ShortCodeNotFound(short_code)
+    if url.is_expired:
+        raise ShortCodeExpired(short_code)
+    return url
+
+
+def record_click(url: URL) -> None:
+    """Atomically increment the click count without touching updated_at."""
+    db.session.execute(
+        update(URL)
+        .where(URL.id == url.id)
+        .values(click_count=URL.click_count + 1, updated_at=URL.updated_at)
+    )
+    db.session.commit()
