@@ -1,0 +1,15 @@
+# Single-database configuration for Flask
+
+## Database migrations
+
+Never change the schema by hand. Always use migrations.
+
+1. Edit a model in `app/models/`.
+2. Generate: `flask --app run db migrate -m "describe the change"`
+3. Review the new file in `migrations/versions/`.
+4. Apply: `flask --app run db upgrade`
+5. Roll back one step if needed: `flask --app run db downgrade`
+6. Commit the migration file together with the model change.
+
+In production, run `flask --app run db upgrade` on deploy, before starting the new version.
+Back up the database before any migration that drops or alters data.
