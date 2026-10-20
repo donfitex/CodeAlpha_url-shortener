@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: linkforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linkforge}
+      POSTGRES_DB: linkforge
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linkforge -d linkforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      target: development
+    command: >
+      sh -c "flask --app run db upgrade &&
+             flask --app run run --host 0.0.0.0 --port 5000 --debug"
+    ports:
+      - "5000:5000"
+    environment:
+      APP_ENV: development
+      SECRET_KEY: ${SECRET_KEY:-dev-only-insecure-key}
+      DATABASE_URL: postgresql://linkforge:${POSTGRES_PASSWORD:-linkforge}@db:5432/linkforge
+      BASE_URL: http://localhost:5000
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -48,3 +48,15 @@ Browser tests use Playwright and are excluded from a plain `pytest` run.
 - Pre-commit hooks (one-time): `pre-commit install`; run on everything: `pre-commit run --all-files`
 
 Configuration lives in `pyproject.toml`. CI runs the same checks.
+
+## Docker
+
+Requires Docker Desktop.
+
+- Start (builds, migrates, serves on http://localhost:5000): `docker compose up --build`
+- Stop: `docker compose down` (data is kept). Wipe the database too: `docker compose down -v`
+- Run tests in the container: `docker compose run --rm web pytest -q`
+- Open a database shell: `docker compose exec db psql -U linkforge`
+- Build the production image: `docker build --target production -t linkforge:prod .`
+
+The production image runs Gunicorn as a non-root user and does not run migrations automatically.
