@@ -5,9 +5,11 @@ from flask import Flask
 from config import get_config
 
 
-def create_app(config_name: str | None = None) -> Flask:
+def create_app(config_name: str | None = None, config_overrides: dict | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(get_config(config_name))
+    if config_overrides:
+        app.config.update(config_overrides)
 
     _configure_logging(app)
     _init_extensions(app)

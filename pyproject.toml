@@ -1,7 +1,7 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers -m 'not e2e'"
 markers = ["e2e: browser tests (added in Commit 19)"]
 
 [tool.coverage.run]

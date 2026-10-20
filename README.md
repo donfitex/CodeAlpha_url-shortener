@@ -31,3 +31,12 @@ Tailwind is compiled with the standalone CLI (download `tailwindcss.exe` from th
 - Watch: same command with `--watch`
 
 `styles.css` is committed, so deployment does not need a build step. Rebuild after changing templates.
+
+## End-to-end tests
+
+Browser tests use Playwright and are excluded from a plain `pytest` run.
+
+- One-time setup: `playwright install chromium`
+- Run: `pytest -m e2e`
+- Watch the browser: `pytest -m e2e --headed --slowmo 300`
+- Everything: `pytest -m "e2e or not e2e"`

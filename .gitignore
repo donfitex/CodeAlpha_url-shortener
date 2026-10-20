@@ -13,3 +13,5 @@ htmlcov/
 
 tailwindcss.exe
 node_modules/
+
+test-results/
