@@ -70,3 +70,11 @@ Gunicorn serves the app: `gunicorn --config gunicorn.conf.py wsgi:app`.
 - `python run.py` (Flask dev server) refuses to start when `APP_ENV=production`.
 - Gunicorn needs Linux. On Windows use the dev server, or Docker to test Gunicorn.
 - Rate limits are per worker with the default in-memory store. Set `RATELIMIT_STORAGE_URI` to a shared store such as Redis in production.
+
+## Health checks
+
+- `GET /health`: liveness. Returns `{"status": "ok"}`. Never touches the database.
+- `GET /health/ready`: readiness. Verifies the database connection; returns `503` if it is down.
+
+Point container restarts at `/health`, and load-balancer traffic decisions at `/health/ready`.
+Responses contain no secrets or configuration, and are never cached.

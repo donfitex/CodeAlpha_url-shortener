@@ -18,9 +18,12 @@ ERROR_INFO = {
 _GENERIC_CLIENT = ("error", "Request failed", "The request could not be completed.")
 
 
+_JSON_PREFIXES = ("/api", "/health")
+
+
 def _wants_json() -> bool:
     path = request.path
-    if path == "/api" or path.startswith("/api/"):
+    if any(path == prefix or path.startswith(prefix + "/") for prefix in _JSON_PREFIXES):
         return True
     return request.accept_mimetypes.best == "application/json"
 

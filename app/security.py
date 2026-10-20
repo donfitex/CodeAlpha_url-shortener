@@ -32,6 +32,6 @@ def register_security_headers(app: Flask) -> None:
         if app.config.get("HSTS_ENABLED") and request.is_secure:
             headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
-        if request.path.startswith("/api/"):
+        if request.path.startswith(("/api/", "/health")):
             headers.setdefault("Cache-Control", "no-store")
         return response
