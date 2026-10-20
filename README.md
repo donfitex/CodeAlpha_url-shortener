@@ -40,3 +40,11 @@ Browser tests use Playwright and are excluded from a plain `pytest` run.
 - Run: `pytest -m e2e`
 - Watch the browser: `pytest -m e2e --headed --slowmo 300`
 - Everything: `pytest -m "e2e or not e2e"`
+
+## Code quality
+
+- Lint: `ruff check .` (auto-fix: `ruff check --fix .`)
+- Format: `ruff format .` (verify only: `ruff format --check .`)
+- Pre-commit hooks (one-time): `pre-commit install`; run on everything: `pre-commit run --all-files`
+
+Configuration lives in `pyproject.toml`. CI runs the same checks.
