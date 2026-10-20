@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}API documentation | LinkForge{% endblock %}
+{% block description %}Reference for the LinkForge URL shortening API.{% endblock %}
+
+{% block content %}
+{% set tones = {
+  "2": "bg-emerald-100 text-emerald-800",
+  "3": "bg-sky-100 text-sky-800",
+  "4": "bg-amber-100 text-amber-900",
+  "5": "bg-red-100 text-red-800"
+} %}
+<article class="mx-auto max-w-4xl">
+  <header>
+    <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ spec.info.title }}</h1>
+    <p class="mt-3 text-slate-600">{{ spec.info.description }}</p>
+    <dl class="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
+      <div class="flex gap-1">
+        <dt>Version</dt>
+        <dd class="font-medium text-slate-900">{{ spec.info.version }}</dd>
+      </div>
+      <div class="flex gap-1">
+        <dt>Base URL</dt>
+        <dd><code class="font-medium text-slate-900">{{ spec.servers[0].url }}</code></dd>
+      </div>
+      <div>
+        <a href="{{ url_for('api.openapi_json') }}"
+           class="font-medium text-indigo-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+          OpenAPI JSON
+        </a>
+      </div>
+    </dl>
+  </header>
+
+  {% for path, methods in spec.paths.items() %}
+  {% for method, op in methods.items() %}
+  <section aria-labelledby="op-{{ op.operationId }}"
+           class="mt-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+    <h2 id="op-{{ op.operationId }}" class="flex flex-wrap items-center gap-3 text-xl font-bold tracking-tight">
+      <span class="rounded-md bg-indigo-600 px-2.5 py-1 text-sm font-semibold uppercase text-white">{{ method }}</span>
+      <code class="break-all">{{ path }}</code>
+    </h2>
+    <p class="mt-3 font-medium">{{ op.summary }}</p>
+    <p class="mt-2 text-slate-600">{{ op.description }}</p>
+
+    {% if op.parameters %}
+    <h3 class="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-600">Parameters</h3>
+    <div class="mt-2 overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="text-slate-600">
+          <tr>
+            <th scope="col" class="py-2 pr-4 font-medium">Name</th>
+            <th scope="col" class="py-2 pr-4 font-medium">In</th>
+            <th scope="col" class="py-2 pr-4 font-medium">Format</th>
+            <th scope="col" class="py-2 font-medium">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for param in op.parameters %}
+          <tr class="border-t border-slate-100 align-top">
+            <td class="py-2 pr-4"><code>{{ param.name }}</code></td>
+            <td class="py-2 pr-4">{{ param["in"] }}</td>
+            <td class="py-2 pr-4"><code>{{ param.schema.pattern or param.schema.type }}</code></td>
+            <td class="py-2">{{ param.description }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if op.requestBody %}
+    <h3 class="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-600">Request body</h3>
+    {% for media_type, media in op.requestBody.content.items() %}
+    <p class="mt-2 text-sm text-slate-600">Content-Type: <code>{{ media_type }}</code></p>
+    <pre class="mt-2 overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-slate-100"><code>{{ media.example|tojson(indent=2) }}</code></pre>
+    {% endfor %}
+    {% endif %}
+
+    <h3 class="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-600">Responses</h3>
+    {% for status, resp in op.responses.items() %}
+    <div class="mt-3 rounded-xl border border-slate-200 p-4">
+      <p class="flex flex-wrap items-center gap-2">
+        <span class="rounded-md px-2 py-0.5 text-sm font-semibold {{ tones[status[0]] }}">{{ status }}</span>
+        <span>{{ resp.description }}</span>
+      </p>
+      {% if resp.headers %}
+      <ul class="mt-3 space-y-1 text-sm text-slate-600">
+        {% for name, header in resp.headers.items() %}
+        <li><code class="text-slate-900">{{ name }}</code>: {{ header.description }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if resp.content %}
+      {% for media_type, media in resp.content.items() %}
+      <p class="mt-3 text-sm text-slate-600"><code>{{ media_type }}</code></p>
+      {% if media.example is defined %}
+      <pre class="mt-1 overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-slate-100"><code>{{ media.example|tojson(indent=2) }}</code></pre>
+      {% else %}
+      <p class="mt-1 text-sm text-slate-600">HTML page, shown to browsers.</p>
+      {% endif %}
+      {% endfor %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  {% endfor %}
+  {% endfor %}
+
+  <section aria-labelledby="schemas-heading" class="mt-12">
+    <h2 id="schemas-heading" class="text-2xl font-bold tracking-tight">Schemas</h2>
+    {% for name, schema in spec.components.schemas.items() %}
+    <h3 class="mt-6 font-semibold"><code>{{ name }}</code></h3>
+    <div class="mt-2 overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="text-slate-600">
+          <tr>
+            <th scope="col" class="py-2 pr-4 font-medium">Field</th>
+            <th scope="col" class="py-2 pr-4 font-medium">Type</th>
+            <th scope="col" class="py-2 pr-4 font-medium">Required</th>
+            <th scope="col" class="py-2 font-medium">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for prop, meta in schema.properties.items() %}
+          <tr class="border-t border-slate-100 align-top">
+            <td class="py-2 pr-4"><code>{{ prop }}</code></td>
+            <td class="py-2 pr-4">
+              {% if meta.enum %}{{ meta.enum|join(" | ") }}
+              {% elif meta["$ref"] %}{{ meta["$ref"].split("/")[-1] }}
+              {% else %}{{ meta.type }}{% endif %}
+            </td>
+            <td class="py-2 pr-4">{{ "yes" if prop in schema.get("required", []) else "no" }}</td>
+            <td class="py-2">{{ meta.description }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </section>
+</article>
+{% endblock %}

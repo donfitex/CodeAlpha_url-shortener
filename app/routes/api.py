@@ -1,6 +1,7 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 from app.extensions import limiter
+from app.openapi import build_openapi_spec
 from app.services import ShortCodeGenerationError, create_short_url
 from app.utils import URLValidationError
 
@@ -43,3 +44,13 @@ def create_url():
         ),
         201,
     )
+
+
+@api_bp.get("/openapi.json")
+def openapi_json():
+    return jsonify(build_openapi_spec(current_app))
+
+
+@api_bp.get("/docs")
+def api_docs():
+    return render_template("api_docs.html", spec=build_openapi_spec(current_app))

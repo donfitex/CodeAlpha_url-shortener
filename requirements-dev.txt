@@ -8,3 +8,5 @@ pytest-playwright==0.5.2
 pip-audit==2.10.1
 ruff==0.17.1
 pre-commit==4.7.0
+openapi-spec-validator==0.9.0
+jsonschema==4.26.0

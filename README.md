@@ -78,3 +78,17 @@ Gunicorn serves the app: `gunicorn --config gunicorn.conf.py wsgi:app`.
 
 Point container restarts at `/health`, and load-balancer traffic decisions at `/health/ready`.
 Responses contain no secrets or configuration, and are never cached.
+
+## API documentation
+
+- Interactive reference: `/api/v1/docs`
+- OpenAPI 3.1 spec: `/api/v1/openapi.json` (import into Postman, Swagger Editor, or a client generator)
+
+Create a short link:
+
+    curl -X POST http://127.0.0.1:5000/api/v1/urls \
+      -H "Content-Type: application/json" \
+      -d '{"url": "https://example.com/very/long/url"}'
+
+The spec lives in `app/openapi.py`. Tests fail if it drifts from the real routes or responses,
+so update it in the same commit as any API change.

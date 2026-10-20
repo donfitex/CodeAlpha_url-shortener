@@ -285,3 +285,15 @@ def test_strict_csp_does_not_break_the_page(home, live):
 
     violations = [m for m in messages if "Content Security Policy" in m or "Refused to" in m]
     assert violations == []
+
+
+def test_api_docs_page_loads_under_strict_csp(page, live):
+    messages = []
+    page.on("console", lambda m: messages.append(m.text))
+
+    response = page.goto(f"{live.url}/api/v1/docs")
+
+    assert response.status == 200
+    expect(page.get_by_role("heading", name="LinkForge API")).to_be_visible()
+    expect(page.get_by_role("heading", name=re.compile("/api/v1/urls"))).to_be_visible()
+    assert [m for m in messages if "Content Security Policy" in m] == []
