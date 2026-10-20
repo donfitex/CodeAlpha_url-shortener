@@ -17,6 +17,7 @@ ENDPOINT = "/api/v1/urls"
 
 # ---------- security headers ----------
 
+
 @pytest.mark.parametrize("path", ["/", "/nope1234", "/static/js/app.js"])
 def test_security_headers_on_every_response(client, path):
     headers = client.get(path).headers
@@ -30,8 +31,12 @@ def test_security_headers_on_every_response(client, path):
 def test_csp_is_strict(client):
     csp = client.get("/").headers["Content-Security-Policy"]
     for directive in (
-        "default-src 'self'", "script-src 'self'", "style-src 'self'",
-        "object-src 'none'", "base-uri 'self'", "form-action 'self'",
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
         "frame-ancestors 'none'",
     ):
         assert directive in csp
@@ -86,6 +91,7 @@ def test_forwarded_proto_is_honoured_with_a_trusted_proxy():
 
 # ---------- production configuration ----------
 
+
 @pytest.mark.parametrize("secret", [None, "", "change-me", "dev-only-insecure-key", "too-short"])
 def test_production_rejects_weak_secret_keys(monkeypatch, secret):
     monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@db/linkforge")
@@ -117,6 +123,7 @@ def test_production_security_settings():
 
 
 # ---------- rate limiting ----------
+
 
 @pytest.fixture
 def make_limited_app():
@@ -181,6 +188,7 @@ def test_rate_limiting_is_disabled_in_testing_config(client):
 
 # ---------- abuse prevention ----------
 
+
 @pytest.mark.parametrize(
     "url", ["https://bad.example/x", "https://BAD.EXAMPLE/x", "https://www.bad.example/x"]
 )
@@ -224,6 +232,7 @@ def test_existing_link_stops_redirecting_once_its_domain_is_blocked(app, client,
 
 # ---------- static safety checks ----------
 
+
 def test_templates_do_not_disable_escaping_or_use_inline_code():
     for path in (APP_DIR / "templates").rglob("*.html"):
         text = path.read_text(encoding="utf-8")
@@ -237,7 +246,14 @@ def test_templates_do_not_disable_escaping_or_use_inline_code():
 
 def test_javascript_avoids_dangerous_sinks():
     js = (APP_DIR / "static" / "js" / "app.js").read_text(encoding="utf-8")
-    for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function"):
+    for sink in (
+        "innerHTML",
+        "outerHTML",
+        "insertAdjacentHTML",
+        "document.write",
+        "eval(",
+        "new Function",
+    ):
         assert sink not in js, sink
 
 

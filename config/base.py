@@ -14,10 +14,12 @@ def _database_url(default: str) -> str:
         url = url.replace("postgres://", "postgresql://", 1)
     return url
 
+
 def _csv(name: str) -> tuple[str, ...]:
-        raw = os.environ.get(name, "")
-        return tuple(item.strip().lower() for item in raw.split(",") if item.strip())
-    
+    raw = os.environ.get(name, "")
+    return tuple(item.strip().lower() for item in raw.split(",") if item.strip())
+
+
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY")
 
@@ -35,8 +37,8 @@ class BaseConfig:
     MAX_CONTENT_LENGTH = 16 * 1024  # 16 KB request limit
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
-    
-        # Abuse prevention
+
+    # Abuse prevention
     BLOCKED_DOMAINS = _csv("BLOCKED_DOMAINS")
 
     # Number of trusted reverse proxies in front of the app (0 = none)

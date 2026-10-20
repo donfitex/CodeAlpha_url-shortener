@@ -63,7 +63,10 @@ def test_updated_at_changes_on_update(make_url):
     ],
 )
 def test_is_expired(expires_at, expected):
-    assert URL(short_code="x", original_url="https://x.com", expires_at=expires_at).is_expired is expected
+    assert (
+        URL(short_code="x", original_url="https://x.com", expires_at=expires_at).is_expired
+        is expected
+    )
 
 
 def test_repr_contains_code(make_url):

@@ -1,9 +1,8 @@
 from flask import Blueprint, current_app, jsonify, request
 
+from app.extensions import limiter
 from app.services import ShortCodeGenerationError, create_short_url
 from app.utils import URLValidationError
-
-from app.extensions import limiter
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -17,9 +16,7 @@ def error_response(code: str, message: str, status: int):
 def create_url():
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
-        return error_response(
-            "invalid_json", "Request body must be a valid JSON object.", 400
-        )
+        return error_response("invalid_json", "Request body must be a valid JSON object.", 400)
 
     try:
         url = create_short_url(data.get("url"))

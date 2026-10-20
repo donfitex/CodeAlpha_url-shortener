@@ -27,6 +27,7 @@ def assert_error(response, status, code):
 
 # ---------- success ----------
 
+
 def test_valid_request_returns_201_with_expected_structure(client):
     response = post_json(client, {"url": "https://example.com/very/long/url"})
 
@@ -60,7 +61,9 @@ def test_surrounding_whitespace_is_trimmed(client):
 
 
 def test_extra_json_fields_are_ignored(client):
-    response = post_json(client, {"url": "https://example.com", "admin": True, "short_code": "hack12"})
+    response = post_json(
+        client, {"url": "https://example.com", "admin": True, "short_code": "hack12"}
+    )
     assert response.status_code == 201
     assert response.get_json()["short_code"] != "hack12"
 
@@ -77,6 +80,7 @@ def test_international_domain_is_accepted(client):
 
 
 # ---------- validation errors (422) ----------
+
 
 def test_missing_url_field(client):
     body = assert_error(post_json(client, {}), 422, "validation_error")
@@ -97,9 +101,7 @@ def test_invalid_urls_are_rejected(client, value):
     assert URL.query.count() == 0
 
 
-@pytest.mark.parametrize(
-    "value", ["ftp://example.com", "mailto:a@example.com", "ws://example.com"]
-)
+@pytest.mark.parametrize("value", ["ftp://example.com", "mailto:a@example.com", "ws://example.com"])
 def test_unsupported_schemes_are_rejected(client, value):
     body = assert_error(post_json(client, {"url": value}), 422, "validation_error")
     assert "http" in body["error"]["message"]
@@ -108,7 +110,12 @@ def test_unsupported_schemes_are_rejected(client, value):
 
 @pytest.mark.parametrize(
     "value",
-    ["javascript:alert(1)", "JaVaScRiPt:alert(1)", "data:text/html,<script>1</script>", "file:///etc/passwd"],
+    [
+        "javascript:alert(1)",
+        "JaVaScRiPt:alert(1)",
+        "data:text/html,<script>1</script>",
+        "file:///etc/passwd",
+    ],
 )
 def test_dangerous_schemes_are_rejected(client, value):
     body = assert_error(post_json(client, {"url": value}), 422, "validation_error")
@@ -117,7 +124,8 @@ def test_dangerous_schemes_are_rejected(client, value):
 
 
 @pytest.mark.parametrize(
-    "value", ["http://localhost/admin", "http://127.0.0.1", "http://192.168.0.1", "http://169.254.169.254/"]
+    "value",
+    ["http://localhost/admin", "http://127.0.0.1", "http://192.168.0.1", "http://169.254.169.254/"],
 )
 def test_private_and_local_targets_are_rejected(client, value):
     assert_error(post_json(client, {"url": value}), 422, "validation_error")
@@ -133,6 +141,7 @@ def test_url_longer_than_limit_is_rejected(client):
 
 # ---------- malformed requests (400 / 413) ----------
 
+
 def test_malformed_json(client):
     response = client.post(ENDPOINT, data="{bad json", content_type="application/json")
     assert_error(response, 400, "invalid_json")
@@ -143,7 +152,9 @@ def test_empty_body(client):
 
 
 def test_empty_body_with_json_content_type(client):
-    assert_error(client.post(ENDPOINT, data="", content_type="application/json"), 400, "invalid_json")
+    assert_error(
+        client.post(ENDPOINT, data="", content_type="application/json"), 400, "invalid_json"
+    )
 
 
 @pytest.mark.parametrize("payload", [["https://example.com"], "https://example.com", 42, None])
@@ -152,7 +163,9 @@ def test_json_body_that_is_not_an_object(client, payload):
 
 
 def test_non_json_content_type_is_rejected(client):
-    response = client.post(ENDPOINT, data="url=https://example.com", content_type="application/x-www-form-urlencoded")
+    response = client.post(
+        ENDPOINT, data="url=https://example.com", content_type="application/x-www-form-urlencoded"
+    )
     assert_error(response, 400, "invalid_json")
     assert URL.query.count() == 0
 
@@ -163,6 +176,7 @@ def test_oversized_body_returns_json_413(client):
 
 
 # ---------- routing and methods ----------
+
 
 @pytest.mark.parametrize("method", ["get", "put", "patch", "delete"])
 def test_other_methods_return_json_405(client, method):
@@ -176,6 +190,7 @@ def test_unknown_api_path_returns_json_404(client):
 
 
 # ---------- collisions ----------
+
 
 def test_collision_is_retried_transparently(client, make_url):
     existing = make_url(code="taken1").short_code
@@ -208,6 +223,7 @@ def test_service_recovers_after_collision_failure(client, make_url):
 
 # ---------- server errors ----------
 
+
 def test_database_failure_returns_500_without_leaking(client, caplog):
     error = OperationalError("INSERT INTO urls", {}, Exception("password=hunter2 host=db.internal"))
     with caplog.at_level(logging.ERROR), patch.object(db.session, "commit", side_effect=error):
@@ -238,6 +254,7 @@ def test_unexpected_exception_returns_generic_500(client):
 
 
 # ---------- response headers ----------
+
 
 def test_success_and_error_responses_are_json(client):
     assert post_json(client, {"url": "https://example.com"}).mimetype == "application/json"

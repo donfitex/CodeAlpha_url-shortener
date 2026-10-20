@@ -1,6 +1,6 @@
 import logging
 
-from .base import BASE_DIR, BaseConfig
+from .base import BaseConfig
 
 
 class DevelopmentConfig(BaseConfig):

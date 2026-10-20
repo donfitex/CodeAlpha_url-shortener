@@ -11,17 +11,13 @@ def utcnow() -> datetime:
 
 class URL(db.Model):
     __tablename__ = "urls"
-    __table_args__ = (
-        CheckConstraint("click_count >= 0", name="ck_urls_click_count_non_negative"),
-    )
+    __table_args__ = (CheckConstraint("click_count >= 0", name="ck_urls_click_count_non_negative"),)
 
     id = db.Column(db.Integer, primary_key=True)
     # unique=True + index=True creates one unique index for fast lookups
     short_code = db.Column(db.String(32), unique=True, index=True, nullable=False)
     original_url = db.Column(db.String(2048), nullable=False)
-    created_at = db.Column(
-        db.DateTime(timezone=True), default=utcnow, nullable=False
-    )
+    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = db.Column(
         db.DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
     )

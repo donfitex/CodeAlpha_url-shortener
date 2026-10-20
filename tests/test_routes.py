@@ -25,6 +25,7 @@ def assert_json_error(response, status, code):
 
 # ---------- successful redirects ----------
 
+
 def test_existing_code_redirects_to_original_url(client, make_url):
     make_url(code="found1", url="https://example.com/destination")
 
@@ -83,6 +84,7 @@ def test_full_flow_create_via_api_then_follow_redirect(client):
 
 # ---------- click counting ----------
 
+
 def test_click_count_increments_on_each_redirect(client, make_url):
     row = make_url(code="count1")
     assert clicks(row) == 0
@@ -129,8 +131,9 @@ def test_click_recording_does_not_change_updated_at(client, make_url):
 def test_redirect_still_works_if_click_recording_fails(client, make_url, caplog):
     row = make_url(code="resil1", url="https://example.com/resilient")
 
-    with caplog.at_level(logging.ERROR), patch(
-        "app.routes.main.record_click", side_effect=RuntimeError("counter down")
+    with (
+        caplog.at_level(logging.ERROR),
+        patch("app.routes.main.record_click", side_effect=RuntimeError("counter down")),
     ):
         response = client.get("/resil1")
 
@@ -141,6 +144,7 @@ def test_redirect_still_works_if_click_recording_fails(client, make_url, caplog)
 
 
 # ---------- missing and malformed codes (404) ----------
+
 
 def test_unknown_code_returns_404_page(client):
     response = client.get("/zzzzzz")
@@ -154,16 +158,16 @@ def test_unknown_code_returns_404_page(client):
 @pytest.mark.parametrize(
     "path",
     [
-        "/ab",                 # too short
-        "/abc",                # too short
-        "/" + "x" * 33,        # too long
-        "/bad-code",           # hyphen
+        "/ab",  # too short
+        "/abc",  # too short
+        "/" + "x" * 33,  # too long
+        "/bad-code",  # hyphen
         "/has.dot",
         "/favicon.ico",
         "/robots.txt",
-        "/a%20b123",           # encoded space
-        "/%C3%BCn%C3%AF123",   # non-ASCII
-        "/a/b/c",              # multiple segments
+        "/a%20b123",  # encoded space
+        "/%C3%BCn%C3%AF123",  # non-ASCII
+        "/a/b/c",  # multiple segments
     ],
 )
 def test_malformed_codes_return_404(client, path):
@@ -196,6 +200,7 @@ def test_missing_code_returns_json_when_requested(client):
 
 
 # ---------- expired links (410) ----------
+
 
 def test_expired_link_returns_410_page(client, make_url):
     make_url(code="old123", expires_at=utc_in(days=-1))
@@ -236,6 +241,7 @@ def test_expired_link_is_not_deleted(client, make_url):
 
 # ---------- safe redirects ----------
 
+
 @pytest.mark.parametrize(
     "tampered",
     [
@@ -268,6 +274,7 @@ def test_destination_is_revalidated_against_current_length_limit(client, make_ur
 
 
 # ---------- routing precedence and methods ----------
+
 
 def test_home_page_is_not_treated_as_a_short_code(client):
     assert client.get("/").status_code == 200

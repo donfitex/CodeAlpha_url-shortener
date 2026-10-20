@@ -1,15 +1,15 @@
 import re
 import secrets
 from datetime import datetime
+from urllib.parse import urlsplit
 
 from flask import current_app
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.models import URL
 from app.utils import validate_url
-from urllib.parse import urlsplit
 
 # No look-alike characters: 0/O, 1/l/I
 ALPHABET = "23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
@@ -29,11 +29,13 @@ def generate_short_code(length: int) -> str:
         )
     return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
+
 def blocked_domains() -> tuple[str, ...]:
     """Configured blocklist plus this service's own host."""
     configured = tuple(current_app.config.get("BLOCKED_DOMAINS", ()))
     own_host = urlsplit(current_app.config["BASE_URL"]).hostname
     return configured + ((own_host,) if own_host else ())
+
 
 def create_short_url(
     original_url: str,
@@ -75,6 +77,7 @@ def create_short_url(
     current_app.logger.error("Could not generate a unique short code")
     raise ShortCodeGenerationError("Could not generate a unique short code.")
 
+
 SHORT_CODE_PATTERN = re.compile(r"^[A-Za-z0-9]{4,32}$")
 
 
@@ -96,4 +99,3 @@ def resolve_short_code(short_code: str) -> URL:
     if url.is_expired:
         raise ShortCodeExpired(short_code)
     return url
-

@@ -9,7 +9,11 @@ ERROR_INFO = {
     410: ("gone", "Link expired", "This link has expired and is no longer available."),
     413: ("payload_too_large", "Request too large", "The request was too large."),
     429: ("too_many_requests", "Too many requests", "Please slow down and try again shortly."),
-    500: ("internal_error", "Something went wrong", "An unexpected error occurred. Please try again later."),
+    500: (
+        "internal_error",
+        "Something went wrong",
+        "An unexpected error occurred. Please try again later.",
+    ),
 }
 _GENERIC_CLIENT = ("error", "Request failed", "The request could not be completed.")
 
@@ -47,9 +51,7 @@ def register_error_handlers(app: Flask) -> None:
         else:
             template = "404.html" if status == 404 else "error.html"
             try:
-                body = render_template(
-                    template, status=status, title=title, message=message
-                )
+                body = render_template(template, status=status, title=title, message=message)
             except Exception:
                 app.logger.exception("Error page failed to render")
                 body = f"<h1>{status}</h1><p>{message}</p>"

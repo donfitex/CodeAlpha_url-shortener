@@ -16,9 +16,7 @@ def get_config(name: str | None = None):
     try:
         config = _configs[name]
     except KeyError:
-        raise ValueError(
-            f"Unknown APP_ENV '{name}'. Choose from: {', '.join(_configs)}"
-        ) from None
+        raise ValueError(f"Unknown APP_ENV '{name}'. Choose from: {', '.join(_configs)}") from None
     if hasattr(config, "validate"):
         config.validate()
     return config

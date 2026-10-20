@@ -33,6 +33,7 @@ def _past(days=1):
 
 # ---------- short-code generation ----------
 
+
 @pytest.mark.parametrize("length", [4, 6, 12, 32])
 def test_generated_code_has_requested_length(length):
     assert len(generate_short_code(length)) == length
@@ -60,6 +61,7 @@ def test_generated_codes_are_unique():
 
 # ---------- URL creation ----------
 
+
 def test_create_persists_the_url(app):
     created = create_short_url("https://example.com/page")
     stored = db.session.get(URL, created.id)
@@ -69,7 +71,9 @@ def test_create_persists_the_url(app):
 
 
 def test_create_uses_configured_length(app):
-    assert len(create_short_url("https://example.com").short_code) == app.config["SHORT_CODE_LENGTH"]
+    assert (
+        len(create_short_url("https://example.com").short_code) == app.config["SHORT_CODE_LENGTH"]
+    )
     app.config["SHORT_CODE_LENGTH"] = 8
     assert len(create_short_url("https://example.com").short_code) == 8
 
@@ -135,6 +139,7 @@ def test_database_error_propagates_and_rolls_back(app):
 
 # ---------- lookup and expiration ----------
 
+
 def test_resolve_returns_existing_url(make_url):
     make_url(code="found1")
     assert resolve_short_code("found1").short_code == "found1"
@@ -163,6 +168,7 @@ def test_resolve_link_expiring_in_future(make_url):
 
 
 # ---------- click counting ----------
+
 
 def test_record_click_increments(make_url):
     url = make_url()

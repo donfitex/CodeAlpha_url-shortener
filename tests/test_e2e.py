@@ -18,6 +18,7 @@ DESTINATION = "https://example.com/destination"
 
 # ---------- fixtures ----------
 
+
 @pytest.fixture(scope="module")
 def live(tmp_path_factory):
     """Run LinkForge on a free port with a throwaway SQLite file."""
@@ -74,6 +75,7 @@ def click_count(live, code):
 
 
 # ---------- the complete workflow ----------
+
 
 def test_complete_shortening_workflow(home, live, context):
     page = home
@@ -149,6 +151,7 @@ def test_second_submission_replaces_the_result(home):
 
 
 # ---------- validation and error states ----------
+
 
 def test_empty_submission_shows_message_without_calling_the_api(home):
     requests = []
@@ -233,6 +236,7 @@ def test_network_failure_shows_connection_message(home):
 
 # ---------- redirect edge cases in a real browser ----------
 
+
 def test_expired_link_shows_gone_page(page, live):
     with live.app.app_context():
         db.session.add(
@@ -263,7 +267,8 @@ def test_unknown_link_shows_not_found_page(page, live):
 def test_homepage_is_keyboard_accessible(home):
     home.keyboard.press("Tab")
     expect(home.get_by_role("link", name="Skip to main content")).to_be_focused()
-    
+
+
 def test_strict_csp_does_not_break_the_page(home, live):
     messages = []
     home.on("console", lambda m: messages.append(m.text))

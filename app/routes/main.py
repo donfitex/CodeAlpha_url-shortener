@@ -1,10 +1,10 @@
-from flask import Blueprint, abort, current_app, redirect, request, render_template
+from flask import Blueprint, abort, current_app, redirect, render_template, request
 
 from app.extensions import db, limiter
 from app.services import (
     ShortCodeExpired,
-    blocked_domains,
     ShortCodeNotFound,
+    blocked_domains,
     record_click,
     resolve_short_code,
 )
@@ -36,9 +36,7 @@ def redirect_to_url(short_code: str):
             blocked_domains=blocked_domains(),
         )
     except URLValidationError:
-        current_app.logger.error(
-            "Blocked unsafe stored destination for code %s", url.short_code
-        )
+        current_app.logger.error("Blocked unsafe stored destination for code %s", url.short_code)
         abort(404)
 
         # Only real visits count; HEAD requests (previews, uptime checks) do not

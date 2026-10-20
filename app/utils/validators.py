@@ -47,7 +47,7 @@ def validate_url(raw, max_length: int = 2048, blocked_domains=()) -> str:
     if not host:
         raise URLValidationError("URL must include a valid host.")
     _validate_host(host)
-    
+
     if _is_blocked(host, blocked_domains):
         raise URLValidationError("Links to this domain are not allowed.")
 
@@ -83,8 +83,8 @@ def _validate_host(host: str) -> None:
     labels = ascii_host.rstrip(".").split(".")
     if not all(_LABEL.match(label) for label in labels):
         raise URLValidationError("URL has an invalid host.")
-    
-    
+
+
 def _is_blocked(host: str, blocked_domains) -> bool:
     try:
         host = host.encode("idna").decode("ascii")
