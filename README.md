@@ -60,3 +60,13 @@ Requires Docker Desktop.
 - Build the production image: `docker build --target production -t linkforge:prod .`
 
 The production image runs Gunicorn as a non-root user and does not run migrations automatically.
+
+## Production server
+
+Gunicorn serves the app: `gunicorn --config gunicorn.conf.py wsgi:app`.
+
+- `wsgi.py` defaults to the production config if `APP_ENV` is unset.
+- Tune with `PORT`, `WEB_CONCURRENCY`, `GUNICORN_THREADS`, `GUNICORN_TIMEOUT`, `GUNICORN_LOG_LEVEL`.
+- `python run.py` (Flask dev server) refuses to start when `APP_ENV=production`.
+- Gunicorn needs Linux. On Windows use the dev server, or Docker to test Gunicorn.
+- Rate limits are per worker with the default in-memory store. Set `RATELIMIT_STORAGE_URI` to a shared store such as Redis in production.

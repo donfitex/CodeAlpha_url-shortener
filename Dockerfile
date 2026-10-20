@@ -27,5 +27,5 @@ RUN pip install -r requirements.txt
 COPY --chown=app:app . .
 USER app
 EXPOSE 8000
-# PORT and WEB_CONCURRENCY can be overridden by the hosting platform
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --access-logfile - 'app:create_app()'"]
+# Tune via PORT, WEB_CONCURRENCY, GUNICORN_THREADS, GUNICORN_TIMEOUT (see gunicorn.conf.py)
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "wsgi:app"]
