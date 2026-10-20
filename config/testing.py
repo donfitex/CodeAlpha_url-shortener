@@ -11,3 +11,4 @@ class TestingConfig(BaseConfig):
     BASE_URL = "http://localhost"
     SHORT_CODE_LENGTH = 6
     LOG_LEVEL = logging.WARNING
+    RATELIMIT_ENABLED = False

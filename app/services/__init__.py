@@ -11,6 +11,7 @@ from app.services.url_shortener import (
     create_short_url,
     generate_short_code,
     resolve_short_code,
+    blocked_domains,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "record_click",
     "register_click_listener",
     "resolve_short_code",
+    "blocked_domains",
 ]

@@ -1,8 +1,9 @@
 from flask import Blueprint, abort, current_app, redirect, request, render_template
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.services import (
     ShortCodeExpired,
+    blocked_domains,
     ShortCodeNotFound,
     record_click,
     resolve_short_code,
@@ -18,6 +19,7 @@ def index():
 
 
 @main_bp.get("/<short_code>")
+@limiter.limit(lambda: current_app.config["RATELIMIT_REDIRECT"])
 def redirect_to_url(short_code: str):
     try:
         url = resolve_short_code(short_code)
@@ -29,7 +31,9 @@ def redirect_to_url(short_code: str):
     # Defense in depth: never redirect to anything that fails validation
     try:
         destination = validate_url(
-            url.original_url, max_length=current_app.config["MAX_URL_LENGTH"]
+            url.original_url,
+            max_length=current_app.config["MAX_URL_LENGTH"],
+            blocked_domains=blocked_domains(),
         )
     except URLValidationError:
         current_app.logger.error(

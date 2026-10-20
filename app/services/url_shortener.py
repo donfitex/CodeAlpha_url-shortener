@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.extensions import db
 from app.models import URL
 from app.utils import validate_url
+from urllib.parse import urlsplit
 
 # No look-alike characters: 0/O, 1/l/I
 ALPHABET = "23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
@@ -28,6 +29,11 @@ def generate_short_code(length: int) -> str:
         )
     return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
+def blocked_domains() -> tuple[str, ...]:
+    """Configured blocklist plus this service's own host."""
+    configured = tuple(current_app.config.get("BLOCKED_DOMAINS", ()))
+    own_host = urlsplit(current_app.config["BASE_URL"]).hostname
+    return configured + ((own_host,) if own_host else ())
 
 def create_short_url(
     original_url: str,
@@ -40,7 +46,9 @@ def create_short_url(
     if every attempt collided.
     """
     cleaned = validate_url(
-        original_url, max_length=current_app.config["MAX_URL_LENGTH"]
+        original_url,
+        max_length=current_app.config["MAX_URL_LENGTH"],
+        blocked_domains=blocked_domains(),
     )
     length = length or current_app.config["SHORT_CODE_LENGTH"]
 

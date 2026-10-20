@@ -263,3 +263,20 @@ def test_unknown_link_shows_not_found_page(page, live):
 def test_homepage_is_keyboard_accessible(home):
     home.keyboard.press("Tab")
     expect(home.get_by_role("link", name="Skip to main content")).to_be_focused()
+    
+def test_strict_csp_does_not_break_the_page(home, live):
+    messages = []
+    home.on("console", lambda m: messages.append(m.text))
+    home.on("pageerror", lambda e: messages.append(str(e)))
+
+    response = home.goto(live.url)
+    assert "default-src 'self'" in response.headers["content-security-policy"]
+
+    home.locator("#url-input").fill(DESTINATION)
+    home.locator("#submit-btn").click()
+    expect(home.locator("#result-card")).to_be_visible()
+    home.locator("#copy-btn").click()
+    expect(home.locator("#copy-btn")).to_have_text("Copied!")
+
+    violations = [m for m in messages if "Content Security Policy" in m or "Refused to" in m]
+    assert violations == []

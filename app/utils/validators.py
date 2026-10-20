@@ -14,7 +14,7 @@ class URLValidationError(ValueError):
     """Raised when a submitted URL is invalid. The message is safe to show users."""
 
 
-def validate_url(raw, max_length: int = 2048) -> str:
+def validate_url(raw, max_length: int = 2048, blocked_domains=()) -> str:
     if raw is None or not isinstance(raw, str) or not raw.strip():
         raise URLValidationError("A URL is required.")
 
@@ -47,6 +47,9 @@ def validate_url(raw, max_length: int = 2048) -> str:
     if not host:
         raise URLValidationError("URL must include a valid host.")
     _validate_host(host)
+    
+    if _is_blocked(host, blocked_domains):
+        raise URLValidationError("Links to this domain are not allowed.")
 
     if port is not None and not (1 <= port <= 65535):
         raise URLValidationError("URL has an invalid port.")
@@ -80,3 +83,16 @@ def _validate_host(host: str) -> None:
     labels = ascii_host.rstrip(".").split(".")
     if not all(_LABEL.match(label) for label in labels):
         raise URLValidationError("URL has an invalid host.")
+    
+    
+def _is_blocked(host: str, blocked_domains) -> bool:
+    try:
+        host = host.encode("idna").decode("ascii")
+    except UnicodeError:
+        pass
+    host = host.lower().rstrip(".")
+    for blocked in blocked_domains:
+        blocked = blocked.lower().strip(".")
+        if blocked and (host == blocked or host.endswith("." + blocked)):
+            return True
+    return False
