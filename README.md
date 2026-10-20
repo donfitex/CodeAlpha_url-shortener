@@ -1,94 +1,90 @@
 # LinkForge
 
-Production-ready URL shortener built with Flask.
+A production-ready URL shortener built with Flask. Paste a long link, get a short one, share it.
 
-## Setup
+## Features
 
+- Secure, collision-safe short codes (6 characters by default)
+- Responsive web interface and a JSON REST API with OpenAPI documentation
+- Click counting and optional link expiration
+- URL validation that rejects dangerous schemes, private addresses and embedded credentials
+- Strict Content Security Policy and other security headers, rate limiting, domain blocklist
+- Health endpoints, Docker images, Gunicorn, migrations, tests and CI
+
+## Quick start
+
+Requires Python 3.10 or newer (3.12 recommended).
+
+```powershell
+git clone <repository-url>
+cd url-shortener
 python -m venv venv
-venv\Scripts\Activate.ps1
+venv\Scripts\Activate.ps1          # macOS/Linux: source venv/bin/activate
 pip install -r requirements-dev.txt
+copy .env.example .env             # macOS/Linux: cp .env.example .env
+```
+
+Put a real secret in `.env`:
+
+```powershell
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Then create the database and start the development server:
+
+```powershell
+flask --app run db upgrade
 python run.py
+```
 
-## Database migrations
+Open http://127.0.0.1:5000. The API reference is at `/api/v1/docs`.
 
-Never change the schema by hand. Always use migrations.
+## With Docker
 
-1. Edit a model in `app/models/`.
-2. Generate: `flask --app run db migrate -m "describe the change"`
-3. Review the new file in `migrations/versions/`.
-4. Apply: `flask --app run db upgrade`
-5. Roll back one step if needed: `flask --app run db downgrade`
-6. Commit the migration file together with the model change.
+Requires Docker Desktop. This starts the app and PostgreSQL, applies migrations and serves on port 5000:
 
-In production, run `flask --app run db upgrade` on deploy, before starting the new version.
-Back up the database before any migration that drops or alters data.
+```powershell
+docker compose up --build
+```
 
-## Frontend styles
+Stop with `docker compose down`. Add `-v` to also delete the database volume.
 
-Tailwind is compiled with the standalone CLI (download `tailwindcss.exe` from the Tailwind releases page).
+## Everyday commands
 
-- Build: `.\tailwindcss.exe -i app/static/css/input.css -o app/static/css/styles.css --minify`
-- Watch: same command with `--watch`
+| Task | Command |
+|---|---|
+| Run the app | `python run.py` |
+| Apply migrations | `flask --app run db upgrade` |
+| Create a migration | `flask --app run db migrate -m "describe the change"` |
+| Run tests | `pytest` |
+| Run browser tests | `pytest -m e2e` |
+| Coverage report | `pytest --cov --cov-report=term-missing` |
+| Lint | `ruff check .` |
+| Format | `ruff format .` |
+| Rebuild CSS | `.\tailwindcss.exe -i app/static/css/input.css -o app/static/css/styles.css --minify` |
+| Production image | `docker build --target production -t linkforge .` |
 
-`styles.css` is committed, so deployment does not need a build step. Rebuild after changing templates.
+## Example
 
-## End-to-end tests
+```powershell
+curl -X POST http://127.0.0.1:5000/api/v1/urls -H "Content-Type: application/json" -d "{\"url\": \"https://example.com/very/long/url\"}"
+```
 
-Browser tests use Playwright and are excluded from a plain `pytest` run.
+## Documentation
 
-- One-time setup: `playwright install chromium`
-- Run: `pytest -m e2e`
-- Watch the browser: `pytest -m e2e --headed --slowmo 300`
-- Everything: `pytest -m "e2e or not e2e"`
+- [Architecture](docs/architecture.md): layers, request flows, data model
+- [API guide](docs/api.md): endpoints, errors, examples
+- [Development](docs/development.md): setup, environment variables, migrations, tooling
+- [Testing](docs/testing.md): test suites and how to run them
+- [Security](docs/security.md): controls and abuse handling
+- [Deployment](docs/deployment.md): production configuration and operations
 
-## Code quality
+## Project layout
 
-- Lint: `ruff check .` (auto-fix: `ruff check --fix .`)
-- Format: `ruff format .` (verify only: `ruff format --check .`)
-- Pre-commit hooks (one-time): `pre-commit install`; run on everything: `pre-commit run --all-files`
-
-Configuration lives in `pyproject.toml`. CI runs the same checks.
-
-## Docker
-
-Requires Docker Desktop.
-
-- Start (builds, migrates, serves on http://localhost:5000): `docker compose up --build`
-- Stop: `docker compose down` (data is kept). Wipe the database too: `docker compose down -v`
-- Run tests in the container: `docker compose run --rm web pytest -q`
-- Open a database shell: `docker compose exec db psql -U linkforge`
-- Build the production image: `docker build --target production -t linkforge:prod .`
-
-The production image runs Gunicorn as a non-root user and does not run migrations automatically.
-
-## Production server
-
-Gunicorn serves the app: `gunicorn --config gunicorn.conf.py wsgi:app`.
-
-- `wsgi.py` defaults to the production config if `APP_ENV` is unset.
-- Tune with `PORT`, `WEB_CONCURRENCY`, `GUNICORN_THREADS`, `GUNICORN_TIMEOUT`, `GUNICORN_LOG_LEVEL`.
-- `python run.py` (Flask dev server) refuses to start when `APP_ENV=production`.
-- Gunicorn needs Linux. On Windows use the dev server, or Docker to test Gunicorn.
-- Rate limits are per worker with the default in-memory store. Set `RATELIMIT_STORAGE_URI` to a shared store such as Redis in production.
-
-## Health checks
-
-- `GET /health`: liveness. Returns `{"status": "ok"}`. Never touches the database.
-- `GET /health/ready`: readiness. Verifies the database connection; returns `503` if it is down.
-
-Point container restarts at `/health`, and load-balancer traffic decisions at `/health/ready`.
-Responses contain no secrets or configuration, and are never cached.
-
-## API documentation
-
-- Interactive reference: `/api/v1/docs`
-- OpenAPI 3.1 spec: `/api/v1/openapi.json` (import into Postman, Swagger Editor, or a client generator)
-
-Create a short link:
-
-    curl -X POST http://127.0.0.1:5000/api/v1/urls \
-      -H "Content-Type: application/json" \
-      -d '{"url": "https://example.com/very/long/url"}'
-
-The spec lives in `app/openapi.py`. Tests fail if it drifts from the real routes or responses,
-so update it in the same commit as any API change.
+```
+app/        application package (routes, services, models, utils, templates, static)
+config/     environment-specific configuration
+migrations/ database migrations
+tests/      unit, API, redirect, security, end-to-end and documentation tests
+docs/       project documentation
+```
