@@ -90,18 +90,85 @@ Production never runs migrations automatically on start.
 Logs go to stdout and stderr and are collected by the platform. Unexpected errors are logged with
 tracebacks, and clients only ever see generic messages. Never log secrets or full connection strings.
 
-## Backups and recovery
+## Preflight check
 
-Take regular PostgreSQL backups and test restoring them.
+Before every release, run the readiness checks with the production environment variables set:
 
 ```powershell
-pg_dump --format=custom --file linkforge.dump "$env:DATABASE_URL"
-pg_restore --clean --if-exists --dbname "$env:DATABASE_URL" linkforge.dump
+python -m app.preflight --check-db --strict
 ```
 
-To recover: provision a database, restore the latest dump, apply migrations, start the app and check
-`/health/ready`. To roll back a bad release, redeploy the previous image. If the release included a
-migration, run `flask --app run db downgrade` first (after a backup), or restore the dump.
+Inside the image (the host's real variables must be passed in):
+
+```powershell
+docker run --rm --env-file prod.env linkforge python -m app.preflight --check-db --strict
+```
+
+Each line is `[PASS]`, `[WARN]` or `[FAIL]`. The exit status is 1 if anything fails, or warns with
+`--strict`. Reports never print secrets or connection strings.
+
+| Check | Verifies |
+|---|---|
+| environment | Debug and testing are off, `APP_ENV` is `production` or unset |
+| secret key | At least 32 characters, not a placeholder |
+| database | PostgreSQL, with connection health checks |
+| public URL | `BASE_URL` uses https and is not a local address |
+| cookies | Secure, HttpOnly and SameSite are set |
+| https | HSTS on; warns if `PROXY_COUNT` is 0 |
+| rate limiting | Enabled; warns if in-memory limits are used with several workers; fails if Redis is configured without its package |
+| server | `wsgi.py`, `gunicorn.conf.py` and Gunicorn are present |
+| logging | Level is INFO or higher |
+| static assets | Compiled CSS exists, cache lifetime is set |
+| migrations | Migration files exist |
+| runtime | JSON errors, `/health` and security headers work |
+| database connection, migrations applied, readiness | With `--check-db`: reachable, at the latest revision, `/health/ready` returns 200 |
+
+## Static assets
+
+The compiled stylesheet is committed, so deployment needs no build step. Static files are served
+with a one hour cache lifetime, because file names are not fingerprinted. For heavy traffic, let the
+reverse proxy or a CDN cache `/static/`.
+
+## Rate limiting strategy
+
+Limits are per client IP. The default `memory://` store is per process, so with several workers the
+effective limit is multiplied by the worker count. Production should use a shared store: set
+`RATELIMIT_STORAGE_URI` to a Redis URL and add the `redis` package to `requirements.txt`. Set
+`PROXY_COUNT` to the number of trusted proxies, otherwise every visitor shares the proxy's address.
+The preflight check warns about both problems.
+
+## Backups and recovery
+
+Back up with `scripts/backup.sh` (needs the PostgreSQL client tools, `pg_dump` 16 or newer for a
+PostgreSQL 16 server):
+
+```sh
+DATABASE_URL=postgresql://... BACKUP_DIR=/var/backups/linkforge BACKUP_KEEP=14 sh scripts/backup.sh
+```
+
+It writes `linkforge-<UTC timestamp>.dump` in compressed custom format, readable only by its owner,
+verifies the archive contains the `urls` table, and keeps the newest `BACKUP_KEEP` files (default 14).
+A failed or unverified backup is discarded. Schedule it with cron or your platform's job scheduler,
+at least daily, and copy the files off the machine.
+
+Restore with `scripts/restore.sh`. It is destructive, so it refuses to run without
+`CONFIRM_RESTORE=yes`, and it restores in a single transaction so a failure leaves the target untouched:
+
+```sh
+CONFIRM_RESTORE=yes sh scripts/restore.sh /var/backups/linkforge/linkforge-20261017-020000Z.dump postgresql://.../linkforge
+```
+
+**Recovery procedure**
+
+1. Stop or isolate the application so nothing writes during the restore.
+2. Provision or empty the target database and restore the newest good backup.
+3. Run `python -m app.preflight --check-db --strict` and apply migrations if needed.
+4. Start the application and confirm `GET /health/ready` returns `200`.
+5. Smoke test: create a link, follow it, check the click count.
+
+Rehearse the restore into a scratch database (pass its URL as the second argument) on a schedule. A
+backup that has never been restored is not a backup. To roll back a bad release, redeploy the previous
+image, and restore the pre-release backup if the release changed the schema.
 
 ## Checklist
 

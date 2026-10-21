@@ -32,6 +32,8 @@ One-time setup for browser tests: `playwright install chromium` (about 150 MB).
 | `test_openapi.py` | The spec is valid, matches the routes, and real responses match it |
 | `test_docs.py` | Documentation files, links and environment variables stay in sync |
 | `test_e2e.py` | Real browser flows against a live server |
+| `test_preflight.py` | Production readiness checks, database checks, report and exit codes |
+| `test_scripts.py` | Backup and restore scripts: structure, safety guards, argument handling |
 
 ## Browser tests
 

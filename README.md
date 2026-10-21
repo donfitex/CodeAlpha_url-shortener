@@ -63,6 +63,8 @@ Stop with `docker compose down`. Add `-v` to also delete the database volume.
 | Format | `ruff format .` |
 | Rebuild CSS | `.\tailwindcss.exe -i app/static/css/input.css -o app/static/css/styles.css --minify` |
 | Production image | `docker build --target production -t linkforge .` |
+| Production preflight | `python -m app.preflight --check-db --strict` |
+| Back up the database | `sh scripts/backup.sh` |
 
 ## Example
 

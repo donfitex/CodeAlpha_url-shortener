@@ -151,6 +151,15 @@ jobs:
             echo "Production image started with a weak SECRET_KEY"
             exit 1
           fi
+      - name: Production preflight
+        run: |
+          docker run --rm \
+            -e SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')" \
+            -e DATABASE_URL=postgresql://linkforge:ci@db.example:5432/linkforge \
+            -e BASE_URL=https://lnk.example \
+            -e PROXY_COUNT=1 \
+            -e WEB_CONCURRENCY=1 \
+            linkforge:ci python -m app.preflight --strict
       - name: Show container logs on failure
         if: failure()
         run: docker logs linkforge-ci

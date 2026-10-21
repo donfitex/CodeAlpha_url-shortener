@@ -117,3 +117,7 @@ def test_ci_uses_the_same_tools_as_the_documented_workflow():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     for command in ("ruff check .", "ruff format .", "pytest -m e2e"):
         assert command in readme
+
+
+def test_build_job_runs_the_production_preflight(workflow):
+    assert "app.preflight --strict" in run_commands(workflow["jobs"]["build"])

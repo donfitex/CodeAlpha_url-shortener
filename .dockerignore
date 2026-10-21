@@ -25,3 +25,4 @@ docker-compose*.yml
 .dockerignore
 .pre-commit-config.yaml
 README.md
+scripts/
