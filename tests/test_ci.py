@@ -121,3 +121,7 @@ def test_ci_uses_the_same_tools_as_the_documented_workflow():
 
 def test_build_job_runs_the_production_preflight(workflow):
     assert "app.preflight --strict" in run_commands(workflow["jobs"]["build"])
+
+
+def test_build_job_runs_the_smoke_test_script(workflow):
+    assert "scripts/smoke_test.py" in run_commands(workflow["jobs"]["build"])

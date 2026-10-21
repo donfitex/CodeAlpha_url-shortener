@@ -145,6 +145,8 @@ jobs:
           curl -sSI http://localhost:8000/ | grep -i '^content-security-policy'
           test "$(docker exec linkforge-ci whoami)" = "app"
           docker exec linkforge-ci sh -c 'test ! -e /app/.env && test ! -d /app/tests'
+      - name: Smoke test script
+        run: python3 scripts/smoke_test.py http://localhost:8000 --wait 30
       - name: Weak secrets must stop the application
         run: |
           if docker run --rm -e SECRET_KEY=short -e DATABASE_URL=sqlite:////tmp/x.db linkforge:ci; then

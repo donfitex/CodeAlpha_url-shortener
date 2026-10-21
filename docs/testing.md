@@ -34,6 +34,8 @@ One-time setup for browser tests: `playwright install chromium` (about 150 MB).
 | `test_e2e.py` | Real browser flows against a live server |
 | `test_preflight.py` | Production readiness checks, database checks, report and exit codes |
 | `test_scripts.py` | Backup and restore scripts: structure, safety guards, argument handling |
+| `test_deploy.py` | `render.yaml`: service, database, environment wiring, no committed secrets |
+| `test_smoke.py` | The post-deploy smoke test script against a live local server |
 
 ## Browser tests
 

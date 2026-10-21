@@ -65,6 +65,7 @@ Stop with `docker compose down`. Add `-v` to also delete the database volume.
 | Production image | `docker build --target production -t linkforge .` |
 | Production preflight | `python -m app.preflight --check-db --strict` |
 | Back up the database | `sh scripts/backup.sh` |
+| Smoke test a deployment | `python scripts/smoke_test.py https://your-domain.example` |
 
 ## Example
 

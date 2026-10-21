@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: linkforge
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Free instances: apply migrations at start (safe with a single instance).
+    # On a paid plan, remove this line and use `preDeployCommand` instead:
+    #   preDeployCommand: flask --app run db upgrade
+    dockerCommand: 'sh -c "flask --app run db upgrade && exec gunicorn --config gunicorn.conf.py wsgi:app"'
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: linkforge-db
+          property: connectionString
+      - key: BASE_URL
+        sync: false # enter your public https address when prompted
+      - key: PROXY_COUNT
+        value: "1"
+      - key: WEB_CONCURRENCY
+        value: "1"
+
+databases:
+  - name: linkforge-db
+    plan: free
+    region: frankfurt
+    databaseName: linkforge
+    user: linkforge
+    ipAllowList: [] # internal connections only
