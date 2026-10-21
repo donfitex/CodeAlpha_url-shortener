@@ -36,6 +36,7 @@ One-time setup for browser tests: `playwright install chromium` (about 150 MB).
 | `test_scripts.py` | Backup and restore scripts: structure, safety guards, argument handling |
 | `test_deploy.py` | `render.yaml`: service, database, environment wiring, no committed secrets |
 | `test_smoke.py` | The post-deploy smoke test script against a live local server |
+| `test_release_audit.py` | The release audit covers all 52 checklist items and passes on this repository |
 
 ## Browser tests
 

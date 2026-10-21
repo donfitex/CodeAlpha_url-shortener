@@ -14,6 +14,7 @@ DOC_NAMES = [
     "testing.md",
     "security.md",
     "deployment.md",
+    "release-audit.md",
 ]
 ALL_DOCS = [ROOT / "README.md", *(DOCS / name for name in DOC_NAMES)]
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")

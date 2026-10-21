@@ -66,6 +66,7 @@ Stop with `docker compose down`. Add `-v` to also delete the database volume.
 | Production preflight | `python -m app.preflight --check-db --strict` |
 | Back up the database | `sh scripts/backup.sh` |
 | Smoke test a deployment | `python scripts/smoke_test.py https://your-domain.example` |
+| Release audit | `python scripts/release_audit.py --full` |
 
 ## Example
 
@@ -81,6 +82,7 @@ curl -X POST http://127.0.0.1:5000/api/v1/urls -H "Content-Type: application/jso
 - [Testing](docs/testing.md): test suites and how to run them
 - [Security](docs/security.md): controls and abuse handling
 - [Deployment](docs/deployment.md): production configuration and operations
+- [Release audit](docs/release-audit.md): the checklist as runnable evidence
 
 ## Project layout
 
