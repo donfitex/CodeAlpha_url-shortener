@@ -63,5 +63,17 @@ coverage.
 
 ## Continuous integration
 
-The GitHub Actions workflow runs Ruff, the test suite and coverage on every push and pull request.
-Browser tests are opt-in locally and can be added to CI as a separate job.
+`.github/workflows/ci.yml` runs on every push to `main` and on every pull request:
+
+| Job | What it checks |
+
+|---|---|
+| `lint` | `ruff check` and `ruff format --check` |
+| `test` | Full suite with coverage on Python 3.10 and 3.12; fails below the coverage floor in `pyproject.toml` |
+| `e2e` | Playwright browser tests in Chromium |
+| `build` | Builds the production image, boots it, and smoke-tests health, creation, redirect, headers, non-root user and weak-secret refusal |
+| `audit` | `pip-audit` on runtime dependencies. Informational, does not block |
+
+The `ci-pass` job fails if any blocking job failed. Require it in the repository's branch protection
+rules. Coverage reports are attached to each run as artifacts, and browser failures upload
+screenshots and traces. Reproduce a failure locally by running the same command the job runs.

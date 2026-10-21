@@ -1,0 +1,185 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_DEFAULT: "3.12"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  lint:
+    name: Lint (Ruff)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install Ruff (version pinned in requirements-dev.txt)
+        run: pip install "$(grep '^ruff==' requirements-dev.txt)"
+      - name: Ruff lint
+        run: ruff check . --output-format=github
+      - name: Ruff format check
+        run: ruff format --check .
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run tests with coverage
+        run: pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html -q
+      - name: Coverage summary
+        if: always() && matrix.python-version == '3.12'
+        run: |
+          echo "### Coverage" >> "$GITHUB_STEP_SUMMARY"
+          coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            htmlcov/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  e2e:
+    name: Browser tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Install Chromium
+        run: playwright install --with-deps chromium
+      - name: Run browser tests
+        run: pytest -m e2e -q --screenshot only-on-failure --tracing retain-on-failure
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build:
+    name: Build verification (Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: production
+          load: true
+          tags: linkforge:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Start the production image
+        run: |
+          SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+          docker run -d --name linkforge-ci -p 8000:8000 \
+            -e SECRET_KEY="$SECRET_KEY" \
+            -e DATABASE_URL=sqlite:////tmp/ci.db \
+            -e BASE_URL=http://localhost:8000 \
+            linkforge:ci \
+            sh -c "flask --app run db upgrade && exec gunicorn --config gunicorn.conf.py wsgi:app"
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "Application did not become healthy in 30 seconds"
+          exit 1
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          curl -fsS http://localhost:8000/health
+          echo
+          curl -fsS http://localhost:8000/health/ready
+          echo
+          RESPONSE="$(curl -fsS -X POST http://localhost:8000/api/v1/urls \
+            -H 'Content-Type: application/json' \
+            -d '{"url":"https://example.com/ci"}')"
+          SHORT_URL="$(echo "$RESPONSE" | python3 -c 'import sys, json; print(json.load(sys.stdin)["short_url"])')"
+          RESULT="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' "$SHORT_URL")"
+          echo "Redirect result: $RESULT"
+          test "$RESULT" = "302 https://example.com/ci"
+          curl -sSI http://localhost:8000/ | grep -i '^content-security-policy'
+          test "$(docker exec linkforge-ci whoami)" = "app"
+          docker exec linkforge-ci sh -c 'test ! -e /app/.env && test ! -d /app/tests'
+      - name: Weak secrets must stop the application
+        run: |
+          if docker run --rm -e SECRET_KEY=short -e DATABASE_URL=sqlite:////tmp/x.db linkforge:ci; then
+            echo "Production image started with a weak SECRET_KEY"
+            exit 1
+          fi
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs linkforge-ci
+      - name: Clean up
+        if: always()
+        run: docker rm -f linkforge-ci || true
+
+  audit:
+    name: Dependency audit (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+      - name: Install pip-audit (version pinned in requirements-dev.txt)
+        run: pip install "$(grep '^pip-audit==' requirements-dev.txt)"
+      - name: Audit runtime dependencies
+        run: pip-audit -r requirements.txt
+
+  ci-pass:
+    name: CI passed
+    if: always()
+    needs: [lint, test, e2e, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify every blocking job succeeded
+        run: |
+          echo "Results: ${{ join(needs.*.result, ', ') }}"
+          [[ "${{ contains(needs.*.result, 'failure') }}" == "false" && "${{ contains(needs.*.result, 'cancelled') }}" == "false" ]]
