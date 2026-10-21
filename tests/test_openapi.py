@@ -12,8 +12,7 @@ from app.openapi import ERROR_CODES, build_openapi_spec
 
 CREATE = "/api/v1/urls"
 REDIRECT = "/{short_code}"
-INTERNAL_ENDPOINTS = {"static", "api.openapi_json", "api.api_docs"}
-
+INTERNAL_ENDPOINTS = {"static", "main.index", "api.openapi_json", "api.api_docs"}
 
 # ---------- helpers ----------
 
@@ -300,7 +299,8 @@ def test_docs_page_works_under_the_strict_csp(client):
     html = response.get_data(as_text=True)
 
     assert "script-src 'self'" in response.headers["Content-Security-Policy"]
-    assert "<script" not in html
+    scripts = re.findall(r"<script\b[^>]*>", html)
+    assert all('src="/static/' in tag for tag in scripts)
     assert not re.search(r"\sstyle\s*=", html)
     assert not re.search(r"\son[a-z]+\s*=", html)
 

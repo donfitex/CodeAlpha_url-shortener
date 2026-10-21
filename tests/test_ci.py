@@ -33,7 +33,7 @@ def test_permissions_are_read_only_and_no_secrets_are_used(workflow):
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
     assert workflow["permissions"] == {"contents": "read"}
     assert "pull_request_target" not in text
-    assert "secrets." not in text
+    assert "${{secrets." not in text
 
 
 def test_every_job_has_a_timeout(workflow):

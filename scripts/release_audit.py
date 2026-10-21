@@ -812,7 +812,6 @@ def check_rate_limiting(ctx):
 def check_error_protection(ctx):
     app = ctx.make_app("errors.db")
     app.config["PROPAGATE_EXCEPTIONS"] = False
-    app.logger.disabled = True
 
     def boom():
         raise RuntimeError("audit-secret-marker")
@@ -820,13 +819,15 @@ def check_error_protection(ctx):
     app.add_url_rule("/__audit_boom", "audit_boom", boom)
     app.add_url_rule("/api/v1/__audit_boom", "audit_boom_api", boom)
     client = app.test_client()
-    for path in ("/__audit_boom", "/api/v1/__audit_boom"):
-        response = client.get(path)
-        text = response.get_data(as_text=True)
-        expect(response.status_code == 500, f"{path} returned {response.status_code}")
-        expect(
-            "audit-secret-marker" not in text and "Traceback" not in text, f"{path} leaked details"
-        )
+    with quiet_logger(app):
+        for path in ("/__audit_boom", "/api/v1/__audit_boom"):
+            response = client.get(path)
+            text = response.get_data(as_text=True)
+            expect(response.status_code == 500, f"{path} returned {response.status_code}")
+            expect(
+                "audit-secret-marker" not in text and "Traceback" not in text,
+                f"{path} leaked details",
+            )
     return ok("unexpected exceptions return a generic 500 with no message or traceback")
 
 
@@ -867,7 +868,7 @@ def check_redirect_tests(ctx):
 
 @audit("Testing", "Error tests")
 def check_error_tests(ctx):
-    require(read("tests/test_api.py"), ["405", "413", "500"], "tests/test_api.py")
+    require(read("tests/test_api.py"), ["405", "413", "500", "Traceback"], "tests/test_api.py")
     require(read("tests/test_security.py"), ["no_leak", "leak"], "tests/test_security.py")
     return ok("400, 404, 405, 410, 413, 500 and 503 paths are tested, including no-leak checks")
 
@@ -1008,8 +1009,8 @@ def check_preflight(ctx):
                 "PROXY_COUNT": 1,
             },
         )
-        app.logger.disabled = True
-        results = run_preflight(app, {"APP_ENV": "production", "WEB_CONCURRENCY": "1"})
+        with quiet_logger(app):
+            results = run_preflight(app, {"APP_ENV": "production", "WEB_CONCURRENCY": "1"})
     bad = [f"{c.name}: {c.detail}" for c in results if c.status != "pass"]
     expect(not bad, "; ".join(bad))
     return ok(f"all {len(results)} preflight checks pass for a correctly configured host")
@@ -1182,3 +1183,22 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+@contextlib.contextmanager
+def quiet_logger(app):
+    """Silence expected error logs, then restore them.
+
+    Flask loggers are shared by name, so leaving one disabled would silence
+    logging for the rest of the process.
+    """
+    previous = app.logger.disabled
+    app.logger.disabled = True
+    try:
+        yield
+    finally:
+        app.logger.disabled = previous
+
+
+def test_the_audit_leaves_application_logging_enabled(results):
+    assert logging.getLogger("app").disabled is False

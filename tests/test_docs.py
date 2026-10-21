@@ -101,5 +101,6 @@ def test_security_guide_covers_the_main_controls():
 
 def test_deployment_guide_covers_operations():
     text = read(DOCS / "deployment.md").lower()
-    for topic in ("gunicorn", "postgresql", "migrations", "health", "backup", "rollback", "https"):
+    for topic in ("gunicorn", "postgresql", "migrations", "health", "backup", "https"):
         assert topic in text
+    assert "rollback" in text or "roll back" in text

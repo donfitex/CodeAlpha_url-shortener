@@ -14,7 +14,7 @@ security work is about not becoming a tool for abuse.
 | Request size | Bodies over 16 KB are rejected with `413` | `config/base.py` |
 | Database safety | SQLAlchemy parameterized queries only. A test forbids raw SQL building | `tests/test_security.py` |
 | Output escaping | Jinja auto-escaping is on. JavaScript never uses `innerHTML` or similar sinks | templates, `app.js` |
-| Security headers | CSP with no inline code, `nosniff`, frame denial, referrer and permissions policies, HSTS over HTTPS in production | `app/security.py` |
+| Security headers | Content Security Policy (CSP) with no inline code, `nosniff`, frame denial, referrer and permissions policies, HSTS over HTTPS in production | `app/security.py` |
 | Rate limiting | Per client IP on link creation and redirects | `app/routes/` |
 | Error handling | Generic messages only, tracebacks stay in logs, API responses are never cached | `app/errors.py` |
 | Cookies | `HttpOnly` and `SameSite=Lax` everywhere, `Secure` in production | `config/` |
@@ -36,7 +36,7 @@ limit is multiplied. Use a shared store through `RATELIMIT_STORAGE_URI` in produ
 
 ## Abuse handling
 
-To take a domain down:
+To take a domain down, use the blocklist:
 
 1. Add it to `BLOCKED_DOMAINS` (comma-separated, subdomains are included) and restart.
 2. New links to it are refused with `422`. Existing links to it stop redirecting and return `404`.
